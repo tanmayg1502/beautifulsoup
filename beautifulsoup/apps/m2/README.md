@@ -70,3 +70,11 @@ SoupStrainer provides several key advantages:
 Notes:
 - The file names and line numbers refer to the original BeautifulSoup source code in this repository before any modifications.
 - Many APIs are methods of `Tag`/`PageElement` and are available on `BeautifulSoup` instances because `BeautifulSoup` subclasses `Tag`.
+
+## PART-3 of Milestone 2: SoupReplacer
+
+- API: `SoupReplacer(og_tag, alt_tag)`; pass via `BeautifulSoup(html, parser, replacer=SoupReplacer("b", "blockquote"))`.
+- Behavior: replaces all occurrences of `og_tag` with `alt_tag` during parsing (not after).
+- Files changed: `bs4/replacer.py` (new), `bs4/__init__.py` (BeautifulSoup accepts and applies `replacer`).
+- Tests: `bs4/tests/test_replacer.py` (two tests).
+- App (Task-6): `apps/m2/task6_replacer.py` uses `SoupReplacer("b","blockquote")` and writes prettified output.
