@@ -92,6 +92,7 @@ from .filter import (
     ElementFilter,
     SoupStrainer,
 )
+from .replacer import SoupReplacer
 from typing import (
     Any,
     cast,
@@ -180,6 +181,7 @@ class BeautifulSoup(Tag):
     is_xml: bool
     known_xml: Optional[bool]
     parse_only: Optional[SoupStrainer]  #: :meta private:
+    replacer: Optional[SoupReplacer]  #: :meta private:
 
     # These members are only used while parsing markup.
     markup: Optional[_RawMarkup]  #: :meta private:
@@ -215,6 +217,7 @@ class BeautifulSoup(Tag):
         from_encoding: Optional[_Encoding] = None,
         exclude_encodings: Optional[_Encodings] = None,
         element_classes: Optional[Dict[Type[PageElement], Type[PageElement]]] = None,
+        replacer: Optional[SoupReplacer] = None,
         **kwargs: Any,
     ):
         """Constructor.
@@ -254,6 +257,11 @@ class BeautifulSoup(Tag):
          like to be instantiated instead as the parse tree is
          built. This is useful for subclassing Tag or NavigableString
          to modify default behavior.
+
+        :param replacer: A SoupReplacer object that specifies tag
+         transformations to be applied during parsing. This can be used
+         to replace tag names, modify attributes, or apply other
+         transformations as tags are created.
 
         :param kwargs: For backwards compatibility purposes, the
          constructor accepts certain keyword arguments used in
@@ -435,6 +443,7 @@ class BeautifulSoup(Tag):
         self.known_xml = self.is_xml
         self._namespaces = dict()
         self.parse_only = parse_only
+        self.replacer = replacer
 
         if hasattr(markup, "read"):  # It's a file-type object.
             markup = markup.read()
@@ -1025,6 +1034,10 @@ class BeautifulSoup(Tag):
         ):
             return None
 
+        # Apply Milestone-2 style replacer (simple name replacement)
+        if self.replacer is not None and self.replacer.original_tag is not None:
+            name = self.replacer.replace_tag_name(name)
+
         tag_class = self.element_classes.get(Tag, Tag)
         # Assume that this is either Tag or a subclass of Tag. If not,
         # the user brought type-unsafety upon themselves.
@@ -1044,6 +1057,11 @@ class BeautifulSoup(Tag):
         )
         if tag is None:
             return tag
+        
+        # Apply Milestone-3 style replacer (transformer functions)
+        if self.replacer is not None:
+            self.replacer.apply_transformers(tag)
+        
         if self._most_recent_element is not None:
             self._most_recent_element.next_element = tag
         self._most_recent_element = tag
@@ -1060,6 +1078,11 @@ class BeautifulSoup(Tag):
         """
         # print("End tag: " + name)
         self.endData()
+        
+        # Apply replacer to endtag name to match the renamed start tag
+        if self.replacer is not None:
+            name = self.replacer.transform_endtag_name(name)
+        
         self._popToTag(name, nsprefix)
 
     def handle_data(self, data: str) -> None:
