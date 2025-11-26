@@ -1093,6 +1093,22 @@ class BeautifulSoup(Tag):
         """
         self.current_data.append(data)
 
+    def __iter__(self) -> Iterator[PageElement]:
+        """Make BeautifulSoup iterable, yielding all nodes in the tree.
+        
+        This allows you to iterate over all nodes in the parse tree without
+        collecting them into a list first. The iteration traverses the tree
+        in depth-first order, visiting each node exactly once.
+        
+        Example:
+            soup = BeautifulSoup(html_doc, 'html.parser')
+            for node in soup:
+                print(node)
+        
+        :return: An iterator over all PageElement objects in the tree.
+        """
+        return self.descendants
+
     def decode(
         self,
         indent_level: Optional[int] = None,
